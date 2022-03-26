@@ -7,21 +7,17 @@ from PyQt5.QtGui import *
 from qt_material import apply_stylesheet
 import resources
 import traceback
-import requests
+import webbrowser
 
 def sendIssue(title, body):
-    # send to github repo at StringentDev/repo
-    url = "https://api.github.com/repos/StringentDev/Quarternion/issues"
-    payload = {
-        "title": title,
-        "body": body
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "token " + "TOKEN"
-    }
-    r = requests.post(url, data=json.dumps(payload), headers=headers)
-    print(r.text)
+    # copy body to clipboard
+    clipboard = QApplication.clipboard()
+    clipboard.setText(body)
+    # open browser to https://github.com/StringentDev/Quarternion/issues/new
+    url = 'https://github.com/StringentDev/Quarternion/issues'
+    # open default browser at url
+    webbrowser.open(url)
+    
 
 if __name__ == "__main__":
     try:
