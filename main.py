@@ -10,11 +10,12 @@ import traceback
 import webbrowser
 
 def sendIssue(title, body):
-    # copy body to clipboard
+    # copy body to clipboard globally
     clipboard = QApplication.clipboard()
     clipboard.setText(body)
+    # open github issue page
     # open browser to https://github.com/StringentDev/Quarternion/issues/new
-    url = 'https://github.com/StringentDev/Quarternion/issues'
+    url = 'https://github.com/StringentDev/Quaternion/issues/new'
     # open default browser at url
     webbrowser.open(url)
     
@@ -22,7 +23,7 @@ def sendIssue(title, body):
 if __name__ == "__main__":
     try:
         root = QApplication(sys.argv)
-        win = Window()
+        win = app.Window()
         win.show()
         sys.exit(root.exec_())
     except Exception as e:

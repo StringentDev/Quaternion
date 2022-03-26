@@ -1,3 +1,4 @@
+from calendar import c
 import sys
 
 from PyQt5.QtCore import *
@@ -5,6 +6,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from qt_material import apply_stylesheet
 import resources
+import requests
 
 class SideBar(QWidget):
     def __init__(self, parent=None):
@@ -47,10 +49,30 @@ class SideBar(QWidget):
         self.layout.setSpacing(0)
         self.layout.addWidget(self.splitter)
         self.setLayout(self.layout)
+
+    def systemDarkMode(self):
+        return self.isDarkMode()
+
+    def isDarkMode(self):
+        # QT check if bakcground is dark
+        if self.palette().color(QPalette.Background).value() < 128:
+            return True
+        else:
+            return False
+
+    def useIcon(self, name):
+        if self.systemDarkMode():
+            return QIcon(':/icons/' + name + "-dark.svg")
+        else:
+            return QIcon(':/icons/' + name + '.svg')
     
-    def addNavigation(self, title, function, checked=False):
+    def addNavigation(self, title, function, checked=False, icon=None, colour=None):
         # create flat button that expands widthwarda
         self.expand_button = QPushButton()
+        # add icon to left of button
+        if icon:
+            self.expand_button.setIcon(self.useIcon(icon))
+
         # expand only widthwards
         self.expand_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         # set flat button style
@@ -58,14 +80,35 @@ class SideBar(QWidget):
         self.expand_button.setFlat(True)
         self.expand_button.setCheckable(True)
         self.expand_button.setChecked(checked)
-        self.expand_button.setFixedHeight(40)
-        self.expand_button.setStyleSheet('QPushButton#expand_button { background-color: transparent; }')
+        self.expand_button.setFixedHeight(30)
+        # if background colour of button is bright then use dark text colour
+        if self.expand_button.palette().color(QPalette.Background).value() > 128:
+            textColour = '#000000'
+        else:
+            # use theme default text colour
+            textColour = '#ffffff'
+        # remove border from flat button and if checked, set background colour to theme highlight which is overridden by colour
+        if colour:
+            self.expand_button.setStyleSheet('QPushButton { margin: 0px; border: none; background-color: %s; color: %s; } QPushButton:checked { background-color: %s; }' % (colour, textColour, colour)) 
+        elif checked:
+            self.expand_button.setStyleSheet('QPushButton { margin: 0px; border: none; background-color: %s; color: %s; } QPushButton:checked { background-color: %s; }' % (self.palette().color(QPalette.Highlight).name(), textColour, self.palette().color(QPalette.Highlight).name()))            
+        else:
+            self.expand_button.setStyleSheet('QPushButton { margin: 0px; border: none; background-color: %s; color: %s; }' % (self.palette().color(QPalette.Window).name(), textColour))
+
         self.expand_button.setText(title)
 
         self.expand_button.clicked.connect(function)
         # add button to sidebar
         self.sidebar_layout.addWidget(self.expand_button)   
     
+    def addNavigationSeparator(self):
+        self.sidebar_layout.addWidget(QFrame())
+
+    def addNavigationSpacer(self):
+        # add flexible spacer that expands to fill available space in sidebar_layout
+        self.sidebar_layout.addStretch()
+
+
     def addWidget(self, widget):
         self.main_content_layout.addWidget(widget)
 
@@ -78,12 +121,11 @@ class Window(QMainWindow):
         self.setWindowTitle("Python Menus & Toolbars")
         # apply_stylesheet(self, theme='light_blue.xml')
         #self.setStyleSheet("background-color: white;")
-        self.resize(600, 480)
+        self.resize(680, 480)
         self._createMenuBar()
         self._createToolBars()
         self._createStatusBar()
-        self.Page("login")
-
+        self.Page("main")
 
     def useIcon(self, name):
         if self.systemDarkMode():
@@ -102,60 +144,52 @@ class Window(QMainWindow):
         scroll.widget().setLayout(layout)
         return scroll
 
-    def login(self):
-        # if both inputs are empty, show error window saying "Both inputs are empty"    
-        if self.username.text() == "" and self.password.text() == "":
-            QMessageBox.warning(self, "Error", "Both inputs are empty")
-            return
-        # if username is empty, show error window saying "Username is empty"
-        elif self.username.text() == "":
-            QMessageBox.warning(self, "Error", "Username is empty")
-            return
-        
-        # Hide main window and show progressbar window
-        self.hide()
-        self.progressBar = QProgressDialog("Logging in...", "Cancel", 0, 100, self)
-        self.progressBar.setWindowModality(Qt.WindowModal)
-        self.progressBar.setWindowTitle("Please wait")
-        self.progressBar.setMinimumDuration(0)
-        self.progressBar.setValue(0)
-        self.progressBar.setMinimum(0)
-        self.progressBar.setMaximum(100)
-        self.progressBar.setCancelButton(None)
-        self.progressBar.show()
-        # simulate progress
-        for i in range(100):
-            if self.progressBar.wasCanceled():
-                break
-            self.progressBar.setValue(i)
-            QApplication.processEvents()
-            QThread.msleep(10)
-        # hide progressbar window
-        self.progressBar.hide()
-        # show main window
-        self.show()
-        self.Page("main")
-
+    def pageIsOn(self, page):
+        if self.currentPage == page:
+            return True
+        else:
+            return False 
 
     def Page(self, id):
+        self.currentPage = id
         # destroy previous CentralWidget
         if self.centralWidget() is not None:
             self.centralWidget().deleteLater()
 
+        layout = SideBar()
+
+        layout.addNavigation("Home", lambda: self.Page("main"), checked=self.pageIsOn("main"))
+        layout.addNavigationSpacer()
+        layout.addNavigation("Updates", lambda: self.Page("settings"), checked=self.pageIsOn("settings"), icon="update-none", colour="#FFA000")
+        # amber colour in hex
+        layout.addNavigation("Settings", lambda: self.Page("settings"), checked=self.pageIsOn("settings"))
         # create new CentralWidget
         scrollablePage = self.scrollablePage()
         if id == "main":
-            # create home page
-            # show toolbar and menu bar
-            self.menuBar().show()
-            # show all toolbars
-            for toolbar in self.findChildren(QToolBar):
-                toolbar.show()
-            
-            # add sidenav and content
-            layout = SideBar()
-            layout.addNavigation("Home", lambda: self.Page("home"), checked=True)
-            
+            # create circle progress bar
+            self.progress = QProgressBar()
+            self.progress.setRange(0, 100)
+            self.progress.setValue(0)
+            self.progress.setTextVisible(False)
+            self.progress.setFixedWidth(200)
+            self.progress.setFixedHeight(200)
+            self.progress.setStyleSheet("background-color: " + self.palette().color(QPalette.Highlight).name() + ";")
+            self.progress.setAlignment(Qt.AlignCenter)
+            layout.addWidget(self.progress)
+        
+        if id == "plasmoid":
+            # create circle progress bar
+            self.progress = QProgressBar()
+            self.progress.setRange(0, 100)
+            self.progress.setValue(0)
+            self.progress.setTextVisible(False)
+            self.progress.setFixedWidth(200)
+            self.progress.setFixedHeight(200)
+            self.progress.setStyleSheet("background-color: " + self.palette().color(QPalette.Highlight).name() + ";")
+            self.progress.setAlignment(Qt.AlignCenter)
+            layout.addWidget(self.progress)
+        
+        if id == "apps":
             # create circle progress bar
             self.progress = QProgressBar()
             self.progress.setRange(0, 100)
@@ -168,13 +202,13 @@ class Window(QMainWindow):
             layout.addWidget(self.progress)
 
 
-            scrollablePage.setWidget(layout)
-            # add scrollablePage to self
-            
-            scrollablePage.setWidgetResizable(True)
-            scrollablePage.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        scrollablePage.setWidget(layout)
+        # add scrollablePage to self
+        
+        scrollablePage.setWidgetResizable(True)
+        scrollablePage.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-            self.setCentralWidget(scrollablePage)
+        self.setCentralWidget(scrollablePage)
             
 
     def _createMenuBar(self):
@@ -232,15 +266,6 @@ class Window(QMainWindow):
             return False
 
 
-    def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Message',
-            "Are you sure to quit?", QMessageBox.Yes | 
-            QMessageBox.No, QMessageBox.No)
-
-        if reply == QMessageBox.Yes:
-            event.accept()
-        else:
-            event.ignore()
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

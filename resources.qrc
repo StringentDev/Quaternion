@@ -3,5 +3,8 @@
     <qresource prefix="icons">
         <file alias="folder-add.svg">assets/icons/places/22/folder-add.svg</file>
         <file alias="folder-add-dark.svg">assets/icons-dark/places/22/folder-add.svg</file>
+
+        <file alias="update-none.svg">assets/icons/status/22/update-none.svg</file>
+        <file alias="update-none-dark.svg">assets/icons-dark/status/22/update-none.svg</file>
     </qresource>
 </RCC>
