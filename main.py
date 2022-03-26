@@ -11,7 +11,7 @@ import requests
 
 def sendIssue(title, body):
     # send to github repo at StringentDev/repo
-    url = "https://api.github.com/repos/StringentDev/repo/issues"
+    url = "https://api.github.com/repos/StringentDev/Quarternion/issues"
     payload = {
         "title": title,
         "body": body
