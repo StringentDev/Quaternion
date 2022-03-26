@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="icons">
+        <file alias="folder-add.svg">assets/icons/places/22/folder-add.svg</file>
+        <file alias="folder-add-dark.svg">assets/icons-dark/places/22/folder-add.svg</file>
+    </qresource>
+</RCC>
